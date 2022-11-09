@@ -78,6 +78,7 @@ public:
   , nh_(nh)
   , bond_spinner_(1, &bond_callback_queue_)
   {
+    nh.param("exit_on_load", exit_on_load_, false);
     load_server_ = nh_.advertiseService("load_nodelet", &LoaderROS::serviceLoad, this);
     unload_server_ = nh_.advertiseService("unload_nodelet", &LoaderROS::serviceUnload, this);
     list_server_ = nh_.advertiseService("list", &LoaderROS::serviceList, this);
@@ -107,6 +108,12 @@ private:
     }
 
     res.success = parent_->load(req.name, req.type, remappings, req.my_argv);
+
+    if (!res.success && exit_on_load_)
+    {
+      ROS_ERROR_STREAM("Nodelet '" << req.name << "' load failed and exit_on_load set, shutting down...");
+      ros::requestShutdown();
+    }
 
     // If requested, create bond to sister process
     if (res.success && !req.bond_id.empty())
@@ -169,6 +176,7 @@ private:
   ros::AsyncSpinner bond_spinner_;
   typedef boost::ptr_map<std::string, bond::Bond> M_stringToBond;
   M_stringToBond bond_map_;
+  bool exit_on_load_;
 };
 
 // Owns a Nodelet and its callback queues

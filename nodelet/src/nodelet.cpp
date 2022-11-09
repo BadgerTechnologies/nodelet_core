@@ -344,11 +344,15 @@ int
     std::string type = arg_parser.getType();
     std::string manager = arg_parser.getManager();
     std::string bond_id;
-    if (arg_parser.isBondEnabled())
+    bool exit_on_load;
+    nh.param(manager + "/exit_on_load", exit_on_load, false);
+    if (!exit_on_load && arg_parser.isBondEnabled())
       bond_id = name + "_" + genId();
     bond::Bond bond(manager + "/bond", bond_id);
     if (!ni.loadNodelet(name, type, manager, arg_parser.getMyArgv(), bond_id))
       return -1;
+    if (exit_on_load)
+      return 0;
 
     // Override default exit handlers for roscpp
     signal(SIGINT, nodeletLoaderSigIntHandler);
